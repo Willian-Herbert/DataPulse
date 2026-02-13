@@ -1,0 +1,17 @@
+wsl // Acessa Linux
+
+docker compose up -d // Subir container
+
+docker ps // Listar containers
+
+docker exec -it datapulse_postgres psql -U datapulse_user -d datapulse // Testar postgres
+
+\dt // Listar Tabelas
+
+\d 'nome tabela' // Lista a Tabela
+
+\q // Sai do Banco
+\
+docker exec -it datapulse_redis redis-cli // Testar redis
+ping
+
