@@ -3,23 +3,34 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.db.database import SessionLocal
 from app.models.coin import Coin
 
-def addCoin(id: str, name: str, symbol: str, price, market_cap: int):
+def addCoin(coin: Coin):
     session = SessionLocal()
     
     try:
-        coin = Coin(
-            id = id,
-            name = name,
-            symbol = symbol,
-            price = price,
-            market_cap = market_cap
-        )
         session.add(coin)
         session.commit()
         return coin
     except SQLAlchemyError:
         session.rollback()
         print('Não foi possível adicionar a moeda ao banco!')
+        raise
+    finally:
+        session.close()
+        
+def addCoinList(coinList: list[Coin]):
+    session = SessionLocal()
+    
+    try:
+        for coin in coinList:
+            try:
+                session.merge(coin)
+            except SQLAlchemyError as e:
+                print(f'Ocorreu um erro: {e}')
+                continue
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        print(f'Ocorreu um erro: {e}')
         raise
     finally:
         session.close()

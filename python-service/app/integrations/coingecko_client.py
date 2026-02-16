@@ -12,8 +12,7 @@ async def getApiCoins():
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f'https://api.coingecko.com/api/v3/coins/markets?vs_currency=brl&include_tokens=top&x_cg_demo_api_key={API_KEY}') as response:
-                return response.text()
+                return await response.json()
     except Exception as e:
         print('Não foi possível buscar os dados!' + e)
         return []
-    

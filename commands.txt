@@ -4,14 +4,16 @@ docker compose up -d // Subir container
 
 docker ps // Listar containers
 
-docker exec -it datapulse_postgres psql -U datapulse_user -d datapulse // Testar postgres
+docker exec -it datapulse_postgres psql -U datapulse_user -d datapulse // Acessar Banco
+
+python -m app.db.init_db // Cria o Banco
 
 \dt // Listar Tabelas
 
 \d 'nome tabela' // Lista a Tabela
 
 \q // Sai do Banco
-\
+
 docker exec -it datapulse_redis redis-cli // Testar redis
 ping
 
