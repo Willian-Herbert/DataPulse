@@ -10,9 +10,9 @@ def addCoin(coin: Coin):
         session.add(coin)
         session.commit()
         return coin
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         session.rollback()
-        print('Não foi possível adicionar a moeda ao banco!')
+        print(f'Não foi possível adicionar a moeda ao banco! {e}')
         raise
     finally:
         session.close()
@@ -41,10 +41,10 @@ def getAllCoins():
     try:
         stmt = select(Coin)
         data = session.execute(stmt)
-        coins = data.scalars().all()
+        coins = list(data.scalars().all())
         return coins
     except Exception as e:
-        print('Não foi possível buscar os dados!' + e)
+        print(f'Não foi possível buscar os dados! {e}')
         raise
     finally:
         session.close()
@@ -58,7 +58,35 @@ def getCoin(coinId: str):
         coin = data.scalar()
         return coin
     except Exception as e:
-        print('Não foi possível buscar a moeda escolhida!' + e)
+        print(f'Não foi possível buscar a moeda escolhida! {e}')
         raise
     finally:
         session.close()
+        
+def removeOldCoins(apiList: list[Coin]):
+    session = SessionLocal()
+    
+    data = session.execute(select(Coin.id))
+    baseList = list(data.scalars().all())
+    
+    for newCoin in apiList:    
+        try:
+            index = baseList.index(newCoin.id)
+            baseList.pop(index)
+        except:
+            continue
+    
+    if baseList != []:
+        print('Limpando moedas antigas')
+        try:
+            for oldCoin in baseList:
+                coin = session.query(Coin).where(id = oldCoin)
+                session.delete(coin)
+            session.commit()
+        except SQLAlchemyError as e:
+            session.rollback()
+            print(f'Falha ao remover moedas! {e}')
+    else:
+        print('Sem moedas novas')
+                
+    session.close()

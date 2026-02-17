@@ -19,7 +19,7 @@ class Coin(Base):
             f"symbol={self.symbol}, "
             f"market_rank={self.market_rank}, "
             f"price={self.price}, "
-            f"market_cap={self.market_cap}), "
-            f"image={self.image}"
+            f"market_cap={self.market_cap}, "
+            f"image={self.image})"
         )
     

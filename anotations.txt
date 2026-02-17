@@ -1,12 +1,1 @@
-Criar função removeOldCoins que recebe a lista de Coins atualizadas, 
-faz um select no banco e compara os ids das duas, gerando uma lista apenas com ids que existem no banco mas não existem nos dados da API e 
-depois removendo as moedas antigas que não estão no top 100
-
-Exemplo de uso:
-
-fruits = ['red', 'green', 'blue']
-try:
-    index = fruits.index('yellow')
-    print(f"Found at index: {index}") -> se encontrar remove da lista
-except ValueError:
-    print("Item not present in list") # Output: Item not present in list -> se não encontar pula para o próximo
+Ver possibilidade de executar o removeOldCoin dentro da função de adicionar
