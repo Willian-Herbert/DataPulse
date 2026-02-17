@@ -19,6 +19,7 @@ def addCoin(coin: Coin):
         
 def addCoinList(coinList: list[Coin]):
     session = SessionLocal()
+    removeOldCoins(coinList, session)
     
     try:
         for coin in coinList:
@@ -39,7 +40,7 @@ def getAllCoins():
     session = SessionLocal()
     
     try:
-        stmt = select(Coin)
+        stmt = select(Coin).order_by(Coin.market_rank)
         data = session.execute(stmt)
         coins = list(data.scalars().all())
         return coins
@@ -63,9 +64,7 @@ def getCoin(coinId: str):
     finally:
         session.close()
         
-def removeOldCoins(apiList: list[Coin]):
-    session = SessionLocal()
-    
+def removeOldCoins(apiList: list[Coin], session):
     data = session.execute(select(Coin.id))
     baseList = list(data.scalars().all())
     
@@ -80,7 +79,7 @@ def removeOldCoins(apiList: list[Coin]):
         print('Limpando moedas antigas')
         try:
             for oldCoin in baseList:
-                coin = session.query(Coin).where(id = oldCoin)
+                coin = session.execute(select(Coin).filter_by(id = oldCoin)).scalar()
                 session.delete(coin)
             session.commit()
         except SQLAlchemyError as e:
@@ -88,5 +87,3 @@ def removeOldCoins(apiList: list[Coin]):
             print(f'Falha ao remover moedas! {e}')
     else:
         print('Sem moedas novas')
-                
-    session.close()
