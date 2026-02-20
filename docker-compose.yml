@@ -25,7 +25,7 @@ services:
         depends_on:
             - postgres
         environment:
-            DATABASE_URL: postgresql://datapulse_user:datapulse_pass@postgres:5432/datapulse
+            DATABASE_URL: postgresql://datapulse_user:datapulse_pass@localhost:5432/datapulse
 
 volumes:
     postgres_data:

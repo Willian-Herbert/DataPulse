@@ -40,7 +40,7 @@ def getAllCoins():
     session = SessionLocal()
     
     try:
-        stmt = select(Coin).order_by(Coin.market_rank)
+        stmt = select(Coin).order_by(Coin.market_rank.asc())
         data = session.execute(stmt)
         coins = list(data.scalars().all())
         return coins
