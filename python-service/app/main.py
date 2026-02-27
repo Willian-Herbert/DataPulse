@@ -1,4 +1,4 @@
-from app.services.coin_service import addCoin, getAllCoins, getCoin, addCoinList, removeOldCoins
+from app.services.coin_service import addCoin, getAllCoins, getCoin, addCoinList, removeOldCoins, getTopCoinsCached
 from app.integrations.coingecko_client import pingConnection, getApiCoins
 from app.mappers.coin_mapper import mapListToCoins
 '''
@@ -13,13 +13,8 @@ asyncio.run(main())
 #     main()
 '''
 
-from app.cache.redis_client import get_redis_client
-
 def main():
-    redis_client = get_redis_client()
-    redis_client.set("ping", "pong")
-    value = redis_client.get("ping")
-    print(value)
+    print(getTopCoinsCached())
 
 if __name__ == "__main__":
     main()

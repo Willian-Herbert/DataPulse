@@ -2,6 +2,14 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from app.db.database import SessionLocal
 from app.models.coin import Coin
+from app.core.logger import get_logger
+from app.cache.redis_client import getRedisClient
+from redis.exceptions import RedisError
+import json
+
+CACHE_KEY = 'coins:top100'
+CACHE_TTL = 60
+logger = get_logger(__name__)
 
 def addCoin(coin: Coin):
     session = SessionLocal()
@@ -12,7 +20,7 @@ def addCoin(coin: Coin):
         return coin
     except SQLAlchemyError as e:
         session.rollback()
-        print(f'Não foi possível adicionar a moeda ao banco! {e}')
+        logger.error(f'Não foi possível adicionar a moeda ao banco: {e}', exc_info=True)
         raise
     finally:
         session.close()
@@ -26,12 +34,13 @@ def addCoinList(coinList: list[Coin]):
             try:
                 session.merge(coin)
             except SQLAlchemyError as e:
-                print(f'Ocorreu um erro: {e}')
+                logger.error(f'Ocorreu um erro: {e}', exc_info=True)
                 continue
         session.commit()
+        invalidateTopCoinsCache()
     except Exception as e:
         session.rollback()
-        print(f'Ocorreu um erro: {e}')
+        logger.error(f'Ocorreu um erro: {e}', exc_info=True)
         raise
     finally:
         session.close()
@@ -45,7 +54,7 @@ def getAllCoins():
         coins = list(data.scalars().all())
         return coins
     except Exception as e:
-        print(f'Não foi possível buscar os dados! {e}')
+        logger.error(f'Não foi possível buscar os dados: {e}', exc_info=True)
         raise
     finally:
         session.close()
@@ -59,7 +68,7 @@ def getCoin(coinId: str):
         coin = data.scalar()
         return coin
     except Exception as e:
-        print(f'Não foi possível buscar a moeda escolhida! {e}')
+        logger.error(f'Não foi possível buscar a moeda escolhida: {e}', exc_info=True)
         raise
     finally:
         session.close()
@@ -76,7 +85,7 @@ def removeOldCoins(apiList: list[Coin], session):
             continue
     
     if baseList != []:
-        print('Limpando moedas antigas')
+        logger.info('Limpando moedas antigas')
         try:
             for oldCoin in baseList:
                 coin = session.execute(select(Coin).filter_by(id = oldCoin)).scalar()
@@ -84,6 +93,48 @@ def removeOldCoins(apiList: list[Coin], session):
             session.commit()
         except SQLAlchemyError as e:
             session.rollback()
-            print(f'Falha ao remover moedas! {e}')
+            logger.error(f'Falha ao remover moedas: {e}', exc_info=True)
     else:
-        print('Sem moedas novas')
+        logger.info('Sem moedas novas')
+        
+def getTopCoinsCached():
+    try:
+        redisClient = getRedisClient()
+        
+        cached = redisClient.get(CACHE_KEY)
+        if cached:
+            logger.info('Hit Redis')
+            return json.loads(cached)
+    except RedisError as e:
+        logger.warning(f'Redis indisponível: {e}')
+        
+    logger.info('Miss Redis')    
+    coins = getAllCoins()
+    serialized = [
+        {
+            'id': c.id,
+            'name': c.name,
+            'symbol': c.symbol,
+            'market_rank': int(c.market_rank),
+            'price': float(c.price),
+            'market_cap': float(c.market_cap),
+            'image': c.image
+        }
+        for c in coins
+    ]
+    
+    try:    
+        redisClient.set(
+            CACHE_KEY,
+            json.dumps(serialized),
+            ex=CACHE_TTL
+        )
+    except RedisError as e:
+        logger.warning(f'Redis indisponível: {e}')
+        
+    return serialized
+    
+
+def invalidateTopCoinsCache():
+    redisClient = getRedisClient()
+    redisClient.delete(CACHE_KEY)
