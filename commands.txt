@@ -17,3 +17,5 @@ python -m app.db.init_db // Cria o Banco
 docker exec -it datapulse_redis redis-cli // Testar redis
 ping
 
+uv run uvicorn app.main:app --reload // Executar FastAPI
+
