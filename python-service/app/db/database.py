@@ -1,9 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.engine import Engine
+from app.core.logger import get_logger
 
 DATABASE_URL = 'postgresql+psycopg://datapulse_user:datapulse_pass@localhost:5432/datapulse'
 _engine = None
+logger = get_logger(__name__)
 
 def get_engine(echo: bool = False) -> Engine:
     global _engine
@@ -14,7 +16,7 @@ def get_engine(echo: bool = False) -> Engine:
             conn = _engine.connect()
             conn.close()
         except Exception as e:
-            print(e)
+            logger.error(e)
     return _engine
 
 engine = get_engine()
