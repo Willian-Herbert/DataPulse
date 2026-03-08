@@ -5,6 +5,8 @@ from app.models.coin import Coin
 from app.core.logger import get_logger
 from app.cache.redis_client import getRedisClient
 from redis.exceptions import RedisError
+from app.integrations.coingecko_client import getApiCoins
+from app.mappers.coin_mapper import mapListToCoins
 import json
 
 CACHE_KEY = 'coins:top100'
@@ -55,7 +57,7 @@ def getAllCoins():
         return coins
     except Exception as e:
         logger.error(f'Não foi possível buscar os dados: {e}', exc_info=True)
-        raise
+        return []
     finally:
         session.close()
         
@@ -97,7 +99,7 @@ def removeOldCoins(apiList: list[Coin], session):
     else:
         logger.info('Sem moedas novas')
         
-def getTopCoinsCached():
+async def getTopCoinsCached():
     try:
         redisClient = getRedisClient()
         
@@ -108,31 +110,46 @@ def getTopCoinsCached():
     except RedisError as e:
         logger.warning(f'Redis indisponível: {e}')
         
-    logger.info('Miss Redis')    
-    coins = getAllCoins()
-    serialized = [
-        {
-            'id': c.id,
-            'name': c.name,
-            'symbol': c.symbol,
-            'market_rank': int(c.market_rank),
-            'price': float(c.price),
-            'market_cap': float(c.market_cap),
-            'image': c.image
-        }
-        for c in coins
-    ]
+    logger.info('Miss Redis, trying database')    
     
     try:    
+        coins = getAllCoins()
+
+        if coins == []:
+            raise Exception('No coins in database')
+
+        serialized = [
+            {
+                'id': c.id,
+                'name': c.name,
+                'symbol': c.symbol,
+                'market_rank': int(c.market_rank),
+                'price': float(c.price),
+                'market_cap': float(c.market_cap),
+                'image': c.image
+            }
+            for c in coins
+        ]
         redisClient.set(
             CACHE_KEY,
             json.dumps(serialized),
             ex=CACHE_TTL
         )
-    except RedisError as e:
-        logger.warning(f'Redis indisponível: {e}')
-        
-    return serialized
+
+        return serialized
+    except Exception as e:
+        logger.warning(f'Ocorreu um erro: {e}')
+
+    logger.info('Miss database, trying API')
+
+    try:
+        coins = await getApiCoins()
+        coinList = mapListToCoins(coins)
+        addCoinList(coinList)
+        await getTopCoinsCached()
+    except Exception as e:
+        logger.error(f'Ocorreu um erro: {e}', exc_info=True)
+        return []
     
 
 def invalidateTopCoinsCache():
