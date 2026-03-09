@@ -1,8 +1,12 @@
 import aiohttp
 import asyncio
 from app.core.logger import get_logger
+from dotenv import load_dotenv
+import os
 
-API_KEY = 'CG-2NVYRDi8YzhtW9Syov4Y82YY'
+load_dotenv()
+
+API_KEY = os.getenv('COINGECKO_API_KEY')
 logger = get_logger(__name__)
 
 async def pingConnection():
